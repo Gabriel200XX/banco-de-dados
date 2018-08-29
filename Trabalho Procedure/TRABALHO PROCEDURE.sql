@@ -15,20 +15,6 @@ GO
 
 USE Universidade
 
---************************************** [Materias]
-
-CREATE TABLE [Materias]
-(
- [idMateria]    INT IDENTITY (1, 1) NOT NULL ,
- [nome]         VARCHAR(250) NOT NULL ,
- [cargaHoraria] INT NOT NULL ,
-
- CONSTRAINT [PK_Materias] PRIMARY KEY CLUSTERED ([idMateria] ASC)
-);
-GO
-
-
-
 --************************************** [Cursos]
 
 CREATE TABLE [Cursos]
@@ -68,6 +54,26 @@ GO
 
 
 
+--************************************** [Materias]
+
+CREATE TABLE [Materias]
+(
+ [idMateria]    INT IDENTITY (1, 1) NOT NULL ,
+ [idCursos]     INT NOT NULL ,
+ [idProfessor]  INT NOT NULL ,
+ [nome]         VARCHAR(250) NOT NULL ,
+ [cargaHoraria] INT NOT NULL ,
+
+ CONSTRAINT [PK_Materias] PRIMARY KEY CLUSTERED ([idMateria] ASC, [idCursos] ASC, [idProfessor] ASC),
+ CONSTRAINT [FK_67] FOREIGN KEY ([idCursos])
+  REFERENCES [Cursos]([idCursos]),
+ CONSTRAINT [FK_71] FOREIGN KEY ([idProfessor])
+  REFERENCES [Professores]([idProfessor])
+);
+GO
+
+
+
 --************************************** [Matricula]
 
 CREATE TABLE [Matricula]
@@ -96,8 +102,8 @@ CREATE TABLE [Matricula]
   REFERENCES [Professores]([idProfessor]),
  CONSTRAINT [FK_35] FOREIGN KEY ([idCursos])
   REFERENCES [Cursos]([idCursos]),
- CONSTRAINT [FK_39] FOREIGN KEY ([idMateria])
-  REFERENCES [Materias]([idMateria]),
+ CONSTRAINT [FK_39] FOREIGN KEY ([idMateria], [idCursos], [idProfessor])
+  REFERENCES [Materias]([idMateria], [idCursos], [idProfessor]),
  CONSTRAINT [FK_57] FOREIGN KEY ([idAluno])
   REFERENCES [Alunos]([idAluno])
 );
@@ -113,30 +119,27 @@ INSERT Cursos (nome) VALUES ('Engenharia de Software')
 
 GO
 
-INSERT Materias (nome, cargaHoraria) VALUES ('Banco de Dados', 144);
-INSERT Materias (nome, cargaHoraria) VALUES ('Programação Orientada a Objetos', 144);
-
-GO
-
 INSERT dbo.Professores (nome) VALUES ('Rodrigo Ramos Dornel');
 INSERT dbo.Professores (nome) VALUES ('Walter Coan');
 
 GO
 
-INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno) VALUES (1, 1, 1, 2018, 1);
-INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno) VALUES (1, 1, 2, 2018, 1);
+INSERT Materias (idCursos, idProfessor, nome, cargaHoraria) VALUES (1, 1, 'Banco de Dados', 144);
+INSERT Materias (idCursos, idProfessor, nome, cargaHoraria) VALUES (1, 2, 'Programação Orientada a Objetos', 144);
 
 GO
 
-SELECT * FROM Alunos;
-SELECT * FROM Cursos;
-SELECT * FROM Materias;
-SELECT * FROM Professores;
-SELECT * FROM Matricula;
+CREATE PROCEDURE procMatricula
+@nome int, @curso int
+AS
+BEGIN
+	INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno) VALUES (1, 1, 1, 2018, 1);
+	INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno) VALUES (1, 1, 2, 2018, 1);
+END
 
 GO
 
-CREATE PROCEDURE
+CREATE PROCEDURE procNotas
 @matricula int, @bimestre int, @nota decimal(2,2), @falta int
 AS
 BEGIN
@@ -155,3 +158,11 @@ BEGIN
 	END
 	
 END
+
+GO
+
+SELECT * FROM Alunos;
+SELECT * FROM Cursos;
+SELECT * FROM Materias;
+SELECT * FROM Professores;
+SELECT * FROM Matricula;

@@ -1,6 +1,7 @@
 -- ****************** SqlDBM: Microsoft SQL Server ******************
 -- ******************************************************************
 USE master
+ALTER DATABASE Universidade SET SINGLE_USER WITH ROLLBACK IMMEDIATE
 
 GO
 
@@ -8,6 +9,7 @@ DROP DATABASE IF EXISTS Universidade
 
 GO
 
+USE master
 --************************************** DataBase Universidade
 CREATE DATABASE Universidade
 
@@ -84,18 +86,18 @@ CREATE TABLE [Matricula]
  [idMateria]   INT NOT NULL ,
  [ano]         INT NOT NULL ,
  [idAluno]     INT NOT NULL ,
- [N1]          DECIMAL(2,2) NULL ,
+ [N1]          DECIMAL(4,2) NULL ,
  [F1]          INT NULL ,
- [N2]          DECIMAL(2,2) NULL ,
+ [N2]          DECIMAL(4,2) NULL ,
  [F2]          INT NULL ,
- [N3]          DECIMAL(2,2) NULL ,
+ [N3]          DECIMAL(4,2) NULL ,
  [F3]          INT NULL ,
- [N4]          DECIMAL(2,2) NULL ,
+ [N4]          DECIMAL(4,2) NULL ,
  [F4]          INT NULL ,
- [totalPontos] DECIMAL(2,2) NULL ,
+ [totalPontos] DECIMAL(4,2) NULL ,
  [totalFaltas] INT NULL ,
  [frequencia]  INT NULL ,
- [mediaFinal]  DECIMAL(2,2) NULL ,
+ [mediaFinal]  DECIMAL(4,2) NULL ,
 
  CONSTRAINT [PK_Matricula] PRIMARY KEY CLUSTERED ([matricula] ASC, [idProfessor] ASC, [idCursos] ASC, [idMateria] ASC, [ano] ASC),
  CONSTRAINT [FK_31] FOREIGN KEY ([idProfessor])
@@ -119,8 +121,8 @@ INSERT Cursos (nome) VALUES ('Engenharia de Software')
 
 GO
 
-INSERT dbo.Professores (nome) VALUES ('Rodrigo Ramos Dornel');
-INSERT dbo.Professores (nome) VALUES ('Walter Coan');
+INSERT Professores (nome) VALUES ('Rodrigo Ramos Dornel');
+INSERT Professores (nome) VALUES ('Walter Coan');
 
 GO
 
@@ -130,39 +132,60 @@ INSERT Materias (idCursos, idProfessor, nome, cargaHoraria) VALUES (1, 2, 'Progr
 GO
 
 CREATE PROCEDURE procMatricula
-@nome int, @curso int
+@nome VARCHAR(250), @curso VARCHAR(250)
 AS
 BEGIN
-	INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno) VALUES (1, 1, 1, 2018, 1);
-	INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno) VALUES (1, 1, 2, 2018, 1);
+	DECLARE @idAluno int;
+	SELECT @idAluno = Alunos.idAluno FROM Alunos WHERE nome = @nome;
+
+	INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno)
+	SELECT Materias.idProfessor, Cursos.idCursos, Materias.idMateria, YEAR(GETDATE()), @idAluno
+	FROM Cursos INNER JOIN Materias ON Cursos.idCursos = Materias.idCursos;
 END
 
 GO
 
-CREATE PROCEDURE procNotas
-@matricula int, @bimestre int, @nota decimal(2,2), @falta int
+CREATE PROCEDURE procNota
+@materia int, @ano int, @aluno int, @bimestre int, @nota decimal(4,2), @falta int
 AS
 BEGIN
 	IF @bimestre = 1 BEGIN
-		UPDATE Matricula SET N1 = @nota, F1 = @falta WHERE matricula = @matricula
+		UPDATE Matricula SET N1 = @nota, F1 = @falta WHERE Matricula.idMateria = @materia AND
+		Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END ELSE IF @bimestre = 2 BEGIN
-		UPDATE Matricula SET N2 = @nota, F2 = @falta WHERE matricula = @matricula
+		UPDATE Matricula SET N2 = @nota, F2 = @falta WHERE Matricula.idMateria = @materia AND
+		Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END ELSE IF @bimestre = 3 BEGIN
-		UPDATE Matricula SET N3 = @nota, F3 = @falta WHERE matricula = @matricula
+		UPDATE Matricula SET N3 = @nota, F3 = @falta WHERE Matricula.idMateria = @materia AND
+		Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END ELSE IF @bimestre = 4 BEGIN
-		UPDATE Matricula SET N4 = @nota, F4 = @falta WHERE matricula = @matricula
-		totalPontos
+		DECLARE @totalPontos decimal(4,2), @totalFaltas int;
+		SELECT @totalPontos = N1 + N2 + N3 + @nota, @totalFaltas = F1 + F2 + F3 + @falta
+		FROM Matricula WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano
+		AND Matricula.idAluno = @aluno;
+
+		UPDATE Matricula SET N4 = @nota, F4 = @falta, totalPontos = @totalPontos,
+		totalFaltas = @totalFaltas, mediaFinal = @totalPontos / 4
+		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
+
+		/*totalPontos
 		totalFaltas
 		frequencia
-		mediaFinal
+		mediaFinal*/
 	END
 	
 END
 
 GO
 
-SELECT * FROM Alunos;
-SELECT * FROM Cursos;
-SELECT * FROM Materias;
-SELECT * FROM Professores;
+EXEC procMatricula 'Gabriel Dezan Busarello', 'Sistemas de Informação';
+EXEC procMatricula 'Rodrigo da Silva Peruzzo', 'Sistemas de Informação';
+
+GO
+
+EXEC procNota 1, 2018, 1, 1, 10, 0;
+EXEC procNota 1, 2018, 1, 2, 10, 0;
+EXEC procNota 1, 2018, 1, 3, 10, 0;
+EXEC procNota 1, 2018, 1, 4, 10, 0;
+
 SELECT * FROM Matricula;

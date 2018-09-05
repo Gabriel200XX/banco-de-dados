@@ -150,28 +150,19 @@ CREATE PROCEDURE procNota
 AS
 BEGIN
 	IF @bimestre = 1 BEGIN
-		UPDATE Matricula SET N1 = @nota, F1 = @falta WHERE Matricula.idMateria = @materia AND
-		Matricula.ano = @ano AND Matricula.idAluno = @aluno;
-	END ELSE IF @bimestre = 2 BEGIN
-		UPDATE Matricula SET N2 = @nota, F2 = @falta WHERE Matricula.idMateria = @materia AND
-		Matricula.ano = @ano AND Matricula.idAluno = @aluno;
-	END ELSE IF @bimestre = 3 BEGIN
-		UPDATE Matricula SET N3 = @nota, F3 = @falta WHERE Matricula.idMateria = @materia AND
-		Matricula.ano = @ano AND Matricula.idAluno = @aluno;
-	END ELSE IF @bimestre = 4 BEGIN
-		DECLARE @totalPontos decimal(4,2), @totalFaltas int;
-		SELECT @totalPontos = N1 + N2 + N3 + @nota, @totalFaltas = F1 + F2 + F3 + @falta
-		FROM Matricula WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano
-		AND Matricula.idAluno = @aluno;
-
-		UPDATE Matricula SET N4 = @nota, F4 = @falta, totalPontos = @totalPontos,
-		totalFaltas = @totalFaltas, mediaFinal = @totalPontos / 4
+		UPDATE Matricula SET N1 = @nota, F1 = @falta, totalPontos = @nota, totalFaltas = @falta
 		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
-
-		/*totalPontos
-		totalFaltas
-		frequencia
-		mediaFinal*/
+	END ELSE IF @bimestre = 2 BEGIN
+		UPDATE Matricula SET N2 = @nota, F2 = @falta, totalPontos = N1 + @nota, totalFaltas = F1 + @falta
+		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
+	END ELSE IF @bimestre = 3 BEGIN
+		UPDATE Matricula SET N3 = @nota, F3 = @falta, totalPontos = N1 + N2 + @nota, totalFaltas = F1 + F2 + @falta
+		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
+	END ELSE IF @bimestre = 4 BEGIN
+		UPDATE Matricula SET N4 = @nota, F4 = @falta, totalPontos = N1 + N2 + N3 + @nota,
+		totalFaltas = F1 + F2 + F3 + @falta, mediaFinal = (N1 + N2 + N3 + @nota) / 4,
+		frequencia = (144 - (F1 + F2 + F3 + @falta)) * 100 / 144
+		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END
 	
 END
@@ -187,5 +178,10 @@ EXEC procNota 1, 2018, 1, 1, 10, 0;
 EXEC procNota 1, 2018, 1, 2, 10, 0;
 EXEC procNota 1, 2018, 1, 3, 10, 0;
 EXEC procNota 1, 2018, 1, 4, 10, 0;
+
+EXEC procNota 1, 2018, 2, 1, 9, 2;
+EXEC procNota 1, 2018, 2, 2, 9, 3;
+EXEC procNota 1, 2018, 2, 3, 9, 5;
+EXEC procNota 1, 2018, 2, 4, 9, 10;
 
 SELECT * FROM Matricula;

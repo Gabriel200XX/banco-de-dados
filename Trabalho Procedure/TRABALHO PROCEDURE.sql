@@ -150,17 +150,17 @@ CREATE PROCEDURE procNota
 AS
 BEGIN
 	IF @bimestre = 1 BEGIN
-		UPDATE Matricula SET N1 = @nota, F1 = @falta, totalPontos = @nota, totalFaltas = @falta
+		UPDATE Matricula SET N1 = @nota, F1 = @falta, totalPontos = @nota, totalFaltas = @falta, mediaFinal = @nota / @bimestre
 		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END ELSE IF @bimestre = 2 BEGIN
-		UPDATE Matricula SET N2 = @nota, F2 = @falta, totalPontos = N1 + @nota, totalFaltas = F1 + @falta
+		UPDATE Matricula SET N2 = @nota, F2 = @falta, totalPontos = N1 + @nota, totalFaltas = F1 + @falta, mediaFinal = (N1 + @nota) / @bimestre
 		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END ELSE IF @bimestre = 3 BEGIN
-		UPDATE Matricula SET N3 = @nota, F3 = @falta, totalPontos = N1 + N2 + @nota, totalFaltas = F1 + F2 + @falta
+		UPDATE Matricula SET N3 = @nota, F3 = @falta, totalPontos = N1 + N2 + @nota, totalFaltas = F1 + F2 + @falta, mediaFinal = (N1 + N2 + @nota) / @bimestre
 		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END ELSE IF @bimestre = 4 BEGIN
 		UPDATE Matricula SET N4 = @nota, F4 = @falta, totalPontos = N1 + N2 + N3 + @nota,
-		totalFaltas = F1 + F2 + F3 + @falta, mediaFinal = (N1 + N2 + N3 + @nota) / 4,
+		totalFaltas = F1 + F2 + F3 + @falta, mediaFinal = (N1 + N2 + N3 + @nota) / @bimestre,
 		frequencia = (144 - (F1 + F2 + F3 + @falta)) * 100 / 144
 		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END

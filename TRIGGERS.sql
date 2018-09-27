@@ -1,0 +1,40 @@
+USE MinhaCaixa;
+
+GO
+
+SELECT * FROM Clientes
+SELECT * FROM LogClientes;
+
+-- INSERE CAMPOS NA TABELA LOGS
+ALTER TABLE LogClientes ADD LogOperacao VARCHAR(20)
+ALTER TABLE LogClientes ADD LogData DATETIME
+ALTER TABLE LogClientes ADD	LogVersao VARCHAR(20)
+
+GO
+
+TRUNCATE TABLE LogClientes
+
+GO
+
+-- CRIA A TABELA LOG
+SELECT *
+INTO LogClientes
+FROM Clientes
+
+-- CRIA A TRIGGER DE UPDATE
+CREATE TRIGGER trgUPDATE_CLIENTE
+ON Clientes
+FOR UPDATE
+AS
+BEGIN
+	INSERT LogClientes SELECT *,
+	LogOperacao = 'UPDATE', LogData = GETDATE(), LogVersao = 'OLD'
+	FROM DELETED;
+
+	INSERT LogClientes SELECT *,
+	LogOperacao = 'UPDATE', LogData = GETDATE(), LogVersao = 'NEW'
+	FROM INSERTED;
+END
+
+GO
+UPDATE Clientes SET ClienteNome = 'XXXXX' WHERE ClienteCodigo = 1

@@ -49,6 +49,7 @@ CREATE TABLE [Alunos]
 (
  [idAluno] INT IDENTITY (1, 1) NOT NULL ,
  [nome]    VARCHAR(250) NOT NULL ,
+ [curso]   VARCHAR(250) NULL
 
  CONSTRAINT [PK_Alunos] PRIMARY KEY CLUSTERED ([idAluno] ASC)
 );
@@ -98,6 +99,7 @@ CREATE TABLE [Matricula]
  [totalFaltas] INT NULL ,
  [frequencia]  INT NULL ,
  [mediaFinal]  DECIMAL(4,2) NULL ,
+ [resultado]   VARCHAR(15) NULL
 
  CONSTRAINT [PK_Matricula] PRIMARY KEY CLUSTERED ([matricula] ASC, [idProfessor] ASC, [idCursos] ASC, [idMateria] ASC, [ano] ASC),
  CONSTRAINT [FK_31] FOREIGN KEY ([idProfessor])
@@ -111,8 +113,9 @@ CREATE TABLE [Matricula]
 );
 GO
 
-INSERT Alunos (nome) VALUES ('Gabriel Dezan Busarello')
-INSERT Alunos (nome) VALUES ('Rodrigo da Silva Peruzzo')
+INSERT Alunos (nome) VALUES ('Gabriel Dezan Busarello', 'Sistemas de Informação')
+INSERT Alunos (nome) VALUES ('Rodrigo da Silva Peruzzo', 'Sistemas de Informação')
+INSERT Alunos (nome) VALUES ('Teste da Silva', 'Sistemas de Informação')
 
 GO
 
@@ -128,6 +131,20 @@ GO
 
 INSERT Materias (idCursos, idProfessor, nome, cargaHoraria) VALUES (1, 1, 'Banco de Dados', 144);
 INSERT Materias (idCursos, idProfessor, nome, cargaHoraria) VALUES (1, 2, 'Programação Orientada a Objetos', 144);
+
+GO
+
+CREATE TRIGGER trgMatricula
+ON Alunos
+FOR INSERT
+BEGIN
+	DECLARE @idAluno int;
+	SELECT @idAluno = Alunos.idAluno FROM Alunos WHERE nome = @nome;
+
+	INSERT INTO Matricula (idProfessor, idCursos, idMateria, ano, idAluno)
+	SELECT Materias.idProfessor, Cursos.idCursos, Materias.idMateria, YEAR(GETDATE()), @idAluno
+	FROM Cursos INNER JOIN Materias ON Cursos.idCursos = Materias.idCursos;
+END
 
 GO
 
@@ -159,18 +176,35 @@ BEGIN
 		UPDATE Matricula SET N3 = @nota, F3 = @falta, totalPontos = N1 + N2 + @nota, totalFaltas = F1 + F2 + @falta, mediaFinal = (N1 + N2 + @nota) / @bimestre
 		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
 	END ELSE IF @bimestre = 4 BEGIN
+
+		DECLARE @FREQUENCIA FLOAT,
+				@MEDIAFINAL FLOAT;
+
 		UPDATE Matricula SET N4 = @nota, F4 = @falta, totalPontos = N1 + N2 + N3 + @nota,
-		totalFaltas = F1 + F2 + F3 + @falta, mediaFinal = (N1 + N2 + N3 + @nota) / @bimestre,
-		frequencia = (144 - (F1 + F2 + F3 + @falta)) * 100 / 144
+		totalFaltas = F1 + F2 + F3 + @falta,
+		@MEDIAFINAL = (N1 + N2 + N3 + @nota) / @bimestre,
+		mediaFinal = @MEDIAFINAL,
+		@FREQUENCIA = (144 - (F1 + F2 + F3 + @falta)) * 100 / 144,
+		frequencia = @FREQUENCIA,
+		resultado = CASE
+			WHEN @FREQUENCIA >= 75 AND @MEDIAFINAL >= 7 THEN
+				'APROVADO'
+			WHEN @FREQUENCIA >= 75 AND @MEDIAFINAL >= 3 THEN
+				'EXAME'
+			ELSE
+				'REPROVADO'
+			END
 		WHERE Matricula.idMateria = @materia AND Matricula.ano = @ano AND Matricula.idAluno = @aluno;
+	--END ELSE IF @bimestre = 5 BEGIN
+		
 	END
-	
 END
 
 GO
 
 EXEC procMatricula 'Gabriel Dezan Busarello', 'Sistemas de Informação';
 EXEC procMatricula 'Rodrigo da Silva Peruzzo', 'Sistemas de Informação';
+EXEC procMatricula 'Teste da Silva', 'Sistemas de Informação';
 
 GO
 
@@ -183,5 +217,10 @@ EXEC procNota 1, 2018, 2, 1, 9, 2;
 EXEC procNota 1, 2018, 2, 2, 9, 3;
 EXEC procNota 1, 2018, 2, 3, 9, 5;
 EXEC procNota 1, 2018, 2, 4, 9, 10;
+
+EXEC procNota 1, 2018, 3, 1, 7, 2;
+EXEC procNota 1, 2018, 3, 2, 7, 3;
+EXEC procNota 1, 2018, 3, 3, 6, 5;
+EXEC procNota 1, 2018, 3, 4, 5, 5;
 
 SELECT * FROM Matricula;
